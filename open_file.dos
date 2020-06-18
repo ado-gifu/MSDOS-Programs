@@ -1,0 +1,48 @@
+org 0x100  ; Program is loaded at this address.
+jmp main   ; Near jump, so by offset I suppose.
+
+error_msg: db "An error occured.$"
+filename: db "HELLO.TXT", 0  ; The name of the file to open.
+buffer: times 32 db 0        ; Buffer for data from the file.
+
+;; Here is where the program begins properly.
+main:
+mov ax, 0x0
+
+mov ah, 0x3d
+mov al, 0x0
+mov dx, filename
+int 0x21
+
+jc handle_error
+
+;; File opened successfully.
+;; Proceed with reading the data into the buffer.
+mov bx, ax  ; Move the file handle into position.
+mov ax, 0x0
+
+mov ah, 0x3f
+mov cx, 32
+mov dx, buffer
+int 0x21
+
+jc handle_error
+jmp write_str
+
+;; If an error occurs, jump here.
+handle_error:
+mov ax, 0x0
+
+mov dx, error_msg
+mov ah, 09h
+int 21h
+int 20h
+
+;; Finally, write the text from the file to stdout.
+write_str:
+mov ax, 0x0
+
+mov dx, buffer
+mov ah, 09H
+int 21h  ; Write a string to console.
+int 20h  ; Close the program.
