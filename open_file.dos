@@ -1,7 +1,14 @@
+%define CMD_NUM_ADDR 0x80
+%define CMD_BUF_ADDR 0x81
+
+%define CH_CR 0x0D
+%define CH_LF 0x0A
+
 org 0x100  ; Program is loaded at this address.
 jmp main   ; Near jump, so by offset I suppose.
 
-error_msg: db "An error occured.$"
+file_error_msg: db "File couldn't be opened.", CH_LF, "Filename:", 0
+error_msg: db "An error occured.", 0
 filename: db "HELLO.TXT", 0  ; The name of the file to open.
 buffer: times 32 db 0        ; Buffer for data from the file.
 
@@ -14,7 +21,7 @@ mov al, 0x0
 mov dx, filename
 int 0x21
 
-jc handle_error
+jc handle_file_error
 
 ;; File opened successfully.
 ;; Proceed with reading the data into the buffer.
@@ -27,22 +34,55 @@ mov dx, buffer
 int 0x21
 
 jc handle_error
-jmp write_str
+
+; If no errors occur, the content obtained from the file can finally be written.
+mov ax, buffer
+call write_str
+
+jmp finish_exec
+
+;; If an error occurs when attempting to open file.
+handle_file_error:
+mov  ax, file_error_msg
+call write_str
+
+mov  ax, filename
+call write_str
+
+jmp  finish_exec
 
 ;; If an error occurs, jump here.
 handle_error:
-mov ax, 0x0
+mov  ax, error_msg
+call write_str
+jmp  finish_exec
 
-mov dx, error_msg
-mov ah, 09h
-int 21h
+;; SUBROUTINE - finished execution.
+finish_exec:
 int 20h
 
-;; Finally, write the text from the file to stdout.
+;; FUNCTION - writes a line to stdout.
+;; ax => string to write.
+;;
+;; NOTE: Save all other registers as function may use them.
 write_str:
-mov ax, 0x0
+    mov bx, ax  ; Keep the addr of the string to be written in 'bx'.
+    
+    mov ax, 0x0
+    mov cx, 0x0
+    mov dx, 0x0
 
-mov dx, buffer
-mov ah, 09H
-int 21h  ; Write a string to console.
-int 20h  ; Close the program.
+    mov ah, 0x2  ; This indicates that a single character will be written.
+
+    .loop:
+        mov cl, [bx]
+        cmp cl, 0
+
+        je .completed
+        mov dl, cl
+        int 0x21 ; Write char.
+        inc bx
+        jmp .loop
+
+    .completed:
+    ret
