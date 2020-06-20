@@ -93,13 +93,15 @@ rem_lead_space:
         mov al, [si]
         inc si
 
+        ; Check what to do with the current character.
         cmp al, CH_SP
         je .rewrite
 
         cmp al, 0x0
         je .completed
+
+        ; All good, move to dest. buffer.
         mov [di], al
-    
         inc di
 
         jmp .rewrite
