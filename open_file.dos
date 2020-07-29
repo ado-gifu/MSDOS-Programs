@@ -21,10 +21,10 @@ buffer:   times FILE_BUF_SIZE db 0    ; Buffer for data from the file.
 
 ;; Here is where the program begins properly.
 main:
-;mov si, CMD_BUF_ADDR
-mov si, const_fn
+mov si, CMD_BUF_ADDR
+;mov si, const_fn
 mov di, filename
-call rem_lead_space
+call rem_lead_spaces
 
 mov ax, 0x0
 
@@ -76,9 +76,9 @@ int 20h
 ;; FUNCTION - removes leading whitespace by rewriting to a separate buffer.
 ;; si => source buffer, ASCIIZ
 ;; di => target buffer, preferably zeroes.
-rem_lead_space:
+rem_lead_spaces:
     xor ax, ax
-    jmp .rewrite  ; Debugging purposes only.
+    ;jmp .rewrite  ; Debugging purposes only.
 
     .loop_on_space:
         mov al, [si]
@@ -86,9 +86,11 @@ rem_lead_space:
 
         cmp al, CH_SP
         
-        je .rewrite
+        jne .prerewrite
         jmp .loop_on_space
 
+    .prerewrite
+        dec si
     .rewrite:
         mov al, [si]
         inc si
